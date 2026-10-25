@@ -161,8 +161,15 @@ flutter:
     - assets/shaders/
     - assets/images/logo/
     - assets/statements/
+    - assets/web/
     - licenses/ech_http/
   fonts:
     - family: MI_Sans_Regular
       fonts:
         - asset: assets/fonts/MiSans-Regular.ttf
+
+dependency_overrides:
+  dlna_dart:
+    path: third_party/dlna_dart
+  ech_http:
+    path: third_party/ech_http

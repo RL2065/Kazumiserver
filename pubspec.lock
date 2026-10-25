@@ -399,11 +399,10 @@ packages:
   dlna_dart:
     dependency: "direct main"
     description:
-      name: dlna_dart
-      sha256: "18192521b4c744fc68451a03f4452a58965d0a0fd2a59c8384600e265c6758fe"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.0.9"
+      path: "third_party/dlna_dart"
+      relative: true
+    source: path
+    version: "0.0.8"
   dynamic_color:
     dependency: "direct main"
     description:
@@ -415,10 +414,9 @@ packages:
   ech_http:
     dependency: "direct main"
     description:
-      name: ech_http
-      sha256: "7b179bbb0cba2f517d5f8fc526e6bb98d96530e6d7a75f7057fce74652967643"
-      url: "https://pub.dev"
-    source: hosted
+      path: "third_party/ech_http"
+      relative: true
+    source: path
     version: "0.2.3"
   equatable:
     dependency: transitive
