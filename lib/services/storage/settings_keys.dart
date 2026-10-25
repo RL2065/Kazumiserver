@@ -448,6 +448,11 @@ class SettingsKeys {
     false,
     group: SettingGroup.player,
   );
+  static const browserCastAutoStart = SettingKey<bool>(
+    _SettingBoxKey.browserCastAutoStart,
+    false,
+    group: SettingGroup.player,
+  );
   static const backgroundPlayback = SettingKey<bool>(
     _SettingBoxKey.backgroundPlayback,
     false,
@@ -657,6 +662,7 @@ class SettingsKeys {
     timelineOnlyShowWatchingBangumis,
     useSystemFont,
     forceAdBlocker,
+    browserCastAutoStart,
     backgroundPlayback,
     proxyEnable,
     proxyConfigured,
@@ -767,6 +773,7 @@ class _SettingBoxKey {
       timelineOnlyShowWatchingBangumis = 'timelineOnlyShowWatchingBangumis',
       useSystemFont = 'useSystemFont',
       forceAdBlocker = 'forceAdBlocker',
+      browserCastAutoStart = 'browserCastAutoStart',
       backgroundPlayback = 'backgroundPlayback',
       proxyEnable = 'proxyEnable',
       proxyConfigured = 'proxyConfigured',

@@ -20,6 +20,7 @@ import 'package:kazumi/bean/dialog/dialog_helper.dart';
 import 'package:kazumi/pages/player/player_controller.dart';
 import 'package:flutter/services.dart';
 import 'package:kazumi/services/player/remote.dart';
+import 'package:kazumi/services/player/browser_cast.dart';
 import 'package:kazumi/bean/appbar/drag_to_move_bar.dart' as dtb;
 import 'package:kazumi/pages/settings/danmaku/danmaku_settings_sheet.dart';
 import 'package:kazumi/utils/constants.dart';
@@ -928,6 +929,20 @@ class _PlayerItemPanelState extends State<PlayerItemPanel> {
                       });
                     },
                     label: '远程投屏',
+                  ),
+                  KazumiMenuItem(
+                    onPressed: () {
+                      playerController.pause();
+                      BrowserCast().castVideo(
+                        videoUrl: playerController.videoUrl,
+                        headers: videoPageController.currentPlugin
+                            .buildHttpHeaders(),
+                        title: videoPageController.title,
+                        startSeconds:
+                            playerController.playback.currentPosition.inSeconds,
+                      );
+                    },
+                    label: '浏览器投屏',
                   ),
                   KazumiMenuItem(
                     onPressed: playerController.launchExternalPlayer,

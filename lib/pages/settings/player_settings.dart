@@ -8,6 +8,8 @@ import 'package:kazumi/bean/settings/settings_dropdown_tile.dart';
 import 'package:kazumi/pages/player/controller/player_aspect_ratio.dart';
 import 'package:kazumi/pages/settings/low_memory_mode_settings.dart';
 import 'package:kazumi/utils/constants.dart';
+import 'package:kazumi/services/player/browser_cast.dart';
+import 'package:kazumi/services/remote/transcode_service.dart';
 import 'package:kazumi/services/storage/storage.dart';
 import 'package:kazumi/services/player/pip_utils.dart';
 import 'package:kazumi/bean/settings/settings_list.dart';
@@ -37,6 +39,7 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
   late bool playerDebugMode;
   late bool playerDisableAnimations;
   late bool forceAdBlocker;
+  late bool browserCastAutoStart;
   late bool autoPlayNext;
   late bool backgroundPlayback;
   late bool brightnessVolumeGesture;
@@ -45,10 +48,25 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
   late int playerLogLevel;
   late int playerControllerLayerDisappearTime;
 
+  String _ffmpegStatus = '检测中…';
+
   @override
   void initState() {
     super.initState();
     _loadSettingsFromStorage();
+    _refreshFfmpegStatus();
+  }
+
+  Future<void> _refreshFfmpegStatus() async {
+    final path = await FfmpegLocator.find();
+    if (!mounted) {
+      return;
+    }
+    setState(() {
+      _ffmpegStatus = path == null
+          ? '未找到 ffmpeg：电视解码失败时无法转码。请把 ffmpeg.exe 放到 Kazumi 程序目录或加入 PATH'
+          : '已找到：$path${TranscodeService.instance.encoder == null ? '' : '，编码器 ${TranscodeService.instance.encoder}'}';
+    });
   }
 
   void _loadSettingsFromStorage() {
@@ -74,6 +92,8 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
     playerDisableAnimations =
         GStorage.getSetting<bool>(SettingsKeys.playerDisableAnimations);
     forceAdBlocker = GStorage.getSetting<bool>(SettingsKeys.forceAdBlocker);
+    browserCastAutoStart =
+        GStorage.getSetting<bool>(SettingsKeys.browserCastAutoStart);
     playerLogLevel = GStorage.getSetting<int>(SettingsKeys.playerLogLevel);
 
     brightnessVolumeGesture =
@@ -368,6 +388,32 @@ class _PlayerSettingsPageState extends State<PlayerSettingsPage> {
                 description: Text('强制启用HLS广告过滤，忽略规则设置'),
                 initialValue: forceAdBlocker,
               ),
+              if (isDesktop())
+                SettingsTile.switchTile(
+                  leading: Icons.cast_rounded,
+                  onToggle: (value) async {
+                    browserCastAutoStart = value ?? !browserCastAutoStart;
+                    await GStorage.putSetting<bool>(
+                        SettingsKeys.browserCastAutoStart,
+                        browserCastAutoStart);
+                    setState(() {});
+                    if (browserCastAutoStart &&
+                        await BrowserCast.ensureServer()) {
+                      await BrowserCast.showAddressDialog();
+                    }
+                  },
+                  title: Text('浏览器投屏服务'),
+                  description: Text(
+                      '启动时开启本机 80 端口服务，电视或手机浏览器打开后可搜索、选集并投到电视'),
+                  initialValue: browserCastAutoStart,
+                ),
+              if (isDesktop())
+                SettingsTile(
+                  leading: Icons.movie_filter_rounded,
+                  title: Text('投屏转码 (ffmpeg)'),
+                  description: Text(_ffmpegStatus),
+                  onPressed: (_) => _refreshFfmpegStatus(),
+                ),
               SettingsTile.switchTile(
                 leading: Icons.animation_rounded,
                 onToggle: (value) async {

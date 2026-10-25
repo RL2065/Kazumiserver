@@ -1,0 +1,343 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kazumi</title>
+<style>
+:root{--bg:#121216;--card:#1e1e26;--card2:#2a2a35;--fg:#ececf1;--muted:#9a9aa8;--accent:#8c7cff;--accent2:#5e4fd6;--danger:#ff6b6b}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+body.tv{font-size:26px}
+button{font:inherit;color:inherit;background:var(--card2);border:0;border-radius:10px;padding:.5em 1em;cursor:pointer;-webkit-tap-highlight-color:transparent}
+button.primary{background:var(--accent);color:#fff}
+button.round{width:2.6em;height:2.6em;border-radius:50%;padding:0;font-size:1.1em;display:inline-flex;align-items:center;justify-content:center}
+button.big{width:3.6em;height:3.6em;font-size:1.3em}
+[data-nav]{outline:none}
+body.tv [data-nav]:focus{box-shadow:0 0 0 4px var(--accent);border-radius:12px}
+body:not(.tv) [data-nav]:focus-visible{box-shadow:0 0 0 3px var(--accent);border-radius:12px}
+header{display:flex;align-items:center;gap:12px;padding:14px 20px;position:sticky;top:0;background:rgba(18,18,22,.95);z-index:5}
+header h1{font-size:1.2em;margin:0 8px 0 0}
+header input{flex:1;min-width:0;font:inherit;padding:.5em .9em;border-radius:12px;border:1px solid #333;background:var(--card);color:var(--fg)}
+main{padding:8px 20px 60px}
+.view{display:none}.view.active{display:block}
+h2{font-size:1.05em;margin:18px 0 10px;color:var(--muted);font-weight:600}
+.row{display:flex;gap:14px;overflow-x:auto;padding:6px 4px 12px;scroll-behavior:smooth}
+.row::-webkit-scrollbar{height:6px}.row::-webkit-scrollbar-thumb{background:#333;border-radius:3px}
+.card{flex:0 0 auto;width:150px;background:var(--card);border-radius:12px;overflow:hidden;cursor:pointer}
+body.tv .card{width:210px}
+.card img{display:block;width:100%;aspect-ratio:3/4;object-fit:cover;background:#2a2a35}
+.card .t{padding:8px 10px;font-size:.9em;line-height:1.3;height:3.2em;overflow:hidden}
+.card .s{padding:0 10px 8px;font-size:.75em;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:14px}
+body.tv .grid{grid-template-columns:repeat(auto-fill,minmax(210px,1fr))}
+.grid .card{width:auto}
+.empty{color:var(--muted);padding:10px 4px}
+.toast{position:fixed;left:50%;bottom:40px;transform:translateX(-50%);background:#333;color:#fff;padding:.6em 1.2em;border-radius:12px;z-index:50;opacity:0;transition:opacity .2s;pointer-events:none;max-width:90vw}
+.toast.show{opacity:1}
+.hero{display:flex;gap:18px;margin:10px 0 6px}
+.hero img{width:140px;aspect-ratio:3/4;object-fit:cover;border-radius:12px;background:#2a2a35;flex:0 0 auto}
+body.tv .hero img{width:200px}
+.hero h2{color:var(--fg);font-size:1.3em;margin:0 0 6px}
+.hero p{margin:4px 0;color:var(--muted);font-size:.85em}
+.chips{display:flex;flex-wrap:wrap;gap:10px;margin:8px 0}
+.chip{background:var(--card);border-radius:999px;padding:.35em 1em;cursor:pointer}
+.chip.on{background:var(--accent);color:#fff}
+.chip.dim{opacity:.5}
+.eps{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px}
+body.tv .eps{grid-template-columns:repeat(auto-fill,minmax(150px,1fr))}
+.ep{background:var(--card);border-radius:10px;padding:.5em .6em;text-align:center;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ep.on{background:var(--accent);color:#fff}
+.ep.seen{border:1px solid var(--accent2)}
+/* remote player card (phone) */
+#nowcard{display:none;background:var(--card);border-radius:16px;padding:16px;margin:8px 0 4px}
+#nowcard.show{display:block}
+#nowcard .nt{font-weight:600;font-size:1.05em}
+#nowcard .ns{color:var(--muted);font-size:.85em;margin-top:2px}
+.seek{display:flex;align-items:center;gap:10px;margin:12px 0 6px;font-variant-numeric:tabular-nums;font-size:.9em}
+.seek input{flex:1;accent-color:var(--accent);height:28px}
+.ctr{display:flex;align-items:center;justify-content:center;gap:14px;margin:6px 0}
+.ctr2{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:8px}
+.ctr2 button{padding:.4em .8em;font-size:.9em}
+/* player (TV) */
+#player{position:fixed;inset:0;background:#000;display:none;z-index:20}
+#player.show{display:block}
+#player.nocursor,#player.nocursor *{cursor:none!important}
+body.playing{overflow:hidden}
+body.tv{scrollbar-width:none}body.tv::-webkit-scrollbar{display:none}
+#player video{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+#ctl{position:absolute;left:0;right:0;bottom:0;padding:18px 32px 24px;background:linear-gradient(transparent,rgba(0,0,0,.85));transition:opacity .3s;font-size:1em}
+#ctl.hide{opacity:0;pointer-events:none}
+#ctl .ti{font-size:1.2em;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#ctl .ms{color:#bbb;font-size:.9em;min-height:1.4em}
+#pbar{position:relative;height:10px;background:#555;border-radius:5px;margin:10px 0 12px;cursor:pointer}
+#pbar i{position:absolute;left:0;top:0;bottom:0;background:var(--accent);border-radius:5px;width:0}
+#pbar b{position:absolute;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;background:#fff;left:0}
+#ctl .btns{display:flex;align-items:center;gap:16px}
+#ctl .btns .sp{flex:1}
+#ctl .tm{font-variant-numeric:tabular-nums;color:#ddd}
+#ctl button{background:rgba(255,255,255,.14)}
+#ctl button:focus,#ctl button:hover{background:var(--accent)}
+#spin{position:absolute;left:50%;top:50%;width:64px;height:64px;margin:-32px;border:5px solid rgba(255,255,255,.2);border-top-color:#fff;border-radius:50%;animation:sp 1s linear infinite;display:none}
+#spin.show{display:block}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<header>
+  <h1>Kazumi</h1>
+  <input id="q" data-nav placeholder="搜索番剧（回车）" autocomplete="off">
+  <button id="home-btn" data-nav>首页</button>
+</header>
+<main>
+  <section id="home" class="view active">
+    <div id="nowcard">
+      <div class="nt" id="now-title">—</div>
+      <div class="ns" id="now-sub"></div>
+      <div class="seek"><span id="now-pos">0:00</span><input id="now-seek" type="range" min="0" max="1000" value="0" data-nav><span id="now-dur">0:00</span></div>
+      <div class="ctr">
+        <button class="round" data-nav data-cmd="seek" data-v="-30" title="后退30秒">⏪</button>
+        <button class="round" data-nav data-cmd="seek" data-v="-10">-10</button>
+        <button class="round big primary" data-nav data-cmd="toggle" id="now-toggle">▶</button>
+        <button class="round" data-nav data-cmd="seek" data-v="10">+10</button>
+        <button class="round" data-nav data-cmd="seek" data-v="30" title="前进30秒">⏩</button>
+      </div>
+      <div class="ctr2">
+        <button data-nav id="now-next">下一集 ⏭</button>
+        <button data-nav id="now-open">在本机全屏播放</button>
+        <button data-nav id="now-transcode">转码重试</button>
+        <button data-nav id="now-stop">停止</button>
+      </div>
+    </div>
+    <h2>继续观看</h2><div id="history" class="row"></div>
+    <h2>热门番组</h2><div id="trends" class="row"></div>
+    <h2>今日放送</h2><div id="calendar" class="row"></div>
+    <h2>在看</h2><div id="collect" class="row"></div>
+  </section>
+  <section id="search" class="view">
+    <h2 id="search-title">搜索结果</h2><div id="search-results" class="grid"></div>
+  </section>
+  <section id="detail" class="view">
+    <div class="hero"><img id="d-img" alt=""><div><h2 id="d-title"></h2><p id="d-meta"></p><p id="d-summary"></p></div></div>
+    <h2>片源 <span id="d-src-status" style="font-weight:400"></span></h2>
+    <div id="d-sources" class="chips"></div>
+    <div id="d-results" class="chips"></div>
+    <h2 id="d-roads-title" style="display:none">线路</h2><div id="d-roads" class="chips"></div>
+    <div id="d-eps" class="eps"></div>
+  </section>
+</main>
+<div id="player">
+  <video id="v" playsinline></video>
+  <div id="spin"></div>
+  <div id="ctl" class="hide">
+    <div class="ti" id="p-title"></div>
+    <div class="ms" id="p-msg"></div>
+    <div id="pbar"><i id="pbar-i"></i><b id="pbar-b"></b></div>
+    <div class="btns">
+      <button class="round" data-nav id="p-back" title="退出播放">✕</button>
+      <button class="round" data-nav data-pcmd="seek" data-v="-10">-10</button>
+      <button class="round big" data-nav data-pcmd="toggle" id="p-toggle">▶</button>
+      <button class="round" data-nav data-pcmd="seek" data-v="10">+10</button>
+      <span class="tm" id="p-time">0:00 / 0:00</span>
+      <span class="sp"></span>
+      <button data-nav data-pcmd="next">下一集 ⏭</button>
+      <button class="round" data-nav data-pcmd="fs" title="全屏">⛶</button>
+    </div>
+  </div>
+</div>
+<div id="toast" class="toast"></div>
+<script src="/hls.min.js"></script>
+<script>
+(function(){
+'use strict';
+var $=function(s){return document.querySelector(s);};
+var params=new URLSearchParams(location.search);
+var isTV=params.get('mode')==='tv'||(params.get('mode')!=='remote'&&/SMART-TV|Tizen|Web0S|BRAVIA|AFT[A-Z]|Android TV|CrKey|HbbTV/i.test(navigator.userAgent));
+if(isTV)document.body.classList.add('tv');
+var state={bangumi:null,sources:null,plugin:null,src:null,roads:null,road:0,history:{}};
+var views=['home'];
+function toast(m,ms){var t=$('#toast');t.textContent=m;t.classList.add('show');clearTimeout(t._h);t._h=setTimeout(function(){t.classList.remove('show');},ms||2200);}
+function api(path,body){var o=body?{method:'POST',body:JSON.stringify(body),headers:{'Content-Type':'application/json'}}:{};o.cache='no-store';return fetch(path,o).then(function(r){return r.json().then(function(j){if(!r.ok)throw new Error(j.error||('HTTP '+r.status));return j;});});}
+function show(id,push){document.querySelectorAll('.view').forEach(function(v){v.classList.toggle('active',v.id===id);});if(push!==false)views.push(id);window.scrollTo(0,0);setTimeout(function(){var f=document.querySelector('#'+id+' [data-nav]');if(isTV&&f)f.focus();},50);}
+function back(){if($('#player').classList.contains('show')){closePlayer();return;}views.pop();if(!views.length)views=['home'];show(views[views.length-1],false);}
+function el(tag,cls,text){var e=document.createElement(tag);if(cls)e.className=cls;if(text!=null)e.textContent=text;return e;}
+function card(b,sub,onclick){var c=el('div','card');c.setAttribute('data-nav','');c.tabIndex=0;var img=el('img');img.src=b.image||'';img.loading='lazy';c.appendChild(img);c.appendChild(el('div','t',b.nameCn||b.name));c.appendChild(el('div','s',sub||''));c.onclick=onclick;return c;}
+function fill(container,nodes,emptyText){container.innerHTML='';if(!nodes.length){container.appendChild(el('div','empty',emptyText));return;}nodes.forEach(function(n){container.appendChild(n);});}
+function fmt(t){t=Math.max(0,Math.floor(t||0));var h=Math.floor(t/3600),m=Math.floor(t%3600/60),s=t%60;return (h?h+':'+('0'+m).slice(-2):m)+':'+('0'+s).slice(-2);}
+
+/* ---------- home ---------- */
+function loadHome(){
+  api('/api/history').then(function(list){state.history={};fill($('#history'),list.map(function(h){state.history[h.bangumi.id]=h;return card(h.bangumi,(h.episodeTitle||('第'+h.episode+'话'))+' · '+fmt(h.progress),function(){playHistory(h);});}),'还没有观看记录');}).catch(function(e){fill($('#history'),[],'加载失败: '+e.message);});
+  fill($('#trends'),[],'加载中…');api('/api/bangumi/trends').then(function(list){fill($('#trends'),list.map(function(b){return card(b,(b.airDate||'')+(b.score?'  ★'+b.score:''),function(){openDetail(b);});}),'暂时拿不到热门列表');}).catch(function(e){fill($('#trends'),[],'热门加载失败: '+e.message);});
+  api('/api/collect?type=1').then(function(list){fill($('#collect'),list.map(function(c){return card(c.bangumi,c.bangumi.airDate,function(){openDetail(c.bangumi);});}),'没有标记为“在看”的番剧');}).catch(function(){});
+  api('/api/bangumi/calendar').then(function(days){var bgmDay=new Date().getDay()||7;var today=[];days.forEach(function(d){d.forEach(function(b){if(b.airWeekday===bgmDay)today.push(b);});});if(!today.length)today=days[(new Date().getDay()+6)%7]||[];fill($('#calendar'),today.map(function(b){return card(b,b.airDate,function(){openDetail(b);});}),'今天没有放送');}).catch(function(){});
+}
+function playHistory(h){toast('正在解析…',8000);if(isTV)goFullscreen();api('/api/play',{id:h.bangumi.id,plugin:h.plugin,src:h.src,road:h.road,episode:h.episode}).then(function(r){toast((isTV?'开始播放：':'已发送到电视：')+r.title);refreshNow();}).catch(function(e){toast('失败：'+e.message,4000);});}
+
+/* ---------- remote player card ---------- */
+var lastNow=null,seeking=false;
+function refreshNow(){api('/api/state').then(function(s){lastNow=s;var c=$('#nowcard');if(!s.now){c.classList.remove('show');return;}c.classList.add('show');
+  $('#now-title').textContent=(s.now.bangumi.nameCn||s.now.bangumi.name)+' · '+s.now.episodeTitle+(s.transcoded?'  [转码]':'');
+  $('#now-sub').textContent='电视：'+(s.status||'');$('#now-toggle').textContent=s.playing?'❚❚':'▶';
+  if(!seeking){$('#now-pos').textContent=fmt(s.position);$('#now-dur').textContent=fmt(s.duration);$('#now-seek').value=s.duration>0?Math.round(s.position/s.duration*1000):0;}
+  $('#now-transcode').style.display=s.transcoded?'none':'';$('#now-open').style.display=isTV?'':'none';}).catch(function(){});}
+document.querySelectorAll('#nowcard [data-cmd]').forEach(function(b){b.onclick=function(){var cmd=b.dataset.cmd;api('/api/cmd',{action:cmd,value:b.dataset.v?Number(b.dataset.v):undefined}).then(function(){if(cmd==='toggle'&&lastNow){lastNow.playing=!lastNow.playing;$('#now-toggle').textContent=lastNow.playing?'❚❚':'▶';}setTimeout(refreshNow,1200);});};});
+var seekEl=$('#now-seek');
+seekEl.addEventListener('input',function(){seeking=true;if(lastNow&&lastNow.duration>0)$('#now-pos').textContent=fmt(seekEl.value/1000*lastNow.duration);});
+seekEl.addEventListener('change',function(){seeking=false;if(!lastNow||!(lastNow.duration>0))return;var t=Math.round(seekEl.value/1000*lastNow.duration);api('/api/cmd',{action:'seekTo',value:t}).then(function(){setTimeout(refreshNow,1500);});});
+function retranscode(from){toast('正在启动转码（约 10 秒）…',20000);return api('/api/retranscode',{}).then(function(r){toast('已切换为转码播放：'+r.title);refreshNow();}).catch(function(e){toast('转码失败：'+e.message,6000);if(from==='player')pmsg('转码失败: '+e.message,true);});}
+$('#now-transcode').onclick=function(){retranscode('card');};
+$('#now-next').onclick=function(){toast('正在解析下一集…',8000);api('/api/next',{}).then(function(r){toast(r.ok?('下一集：'+r.title):r.error);refreshNow();}).catch(function(e){toast('失败：'+e.message,4000);});};
+$('#now-stop').onclick=function(){api('/api/stop',{}).then(function(){toast('已停止');refreshNow();});};
+$('#now-open').onclick=function(){openPlayer();goFullscreen();};
+setInterval(function(){if(!$('#player').classList.contains('show'))refreshNow();},2500);
+
+/* ---------- search ---------- */
+$('#q').addEventListener('keydown',function(e){if(e.key==='Enter'||e.keyCode===13){e.preventDefault();doSearch(this.value.trim());this.blur();}});
+function doSearch(kw){if(!kw)return;$('#search-title').textContent='搜索：'+kw;fill($('#search-results'),[],'搜索中…');show('search');api('/api/bangumi/search?q='+encodeURIComponent(kw)).then(function(list){fill($('#search-results'),list.map(function(b){return card(b,b.airDate+(b.score?'  ★'+b.score:''),function(){openDetail(b);});}),'没有结果');}).catch(function(e){fill($('#search-results'),[],'搜索失败: '+e.message);});}
+$('#home-btn').onclick=function(){views=['home'];show('home',false);loadHome();};
+
+/* ---------- detail ---------- */
+function openDetail(b){
+  state.bangumi=b;state.sources=null;state.plugin=null;state.src=null;state.roads=null;
+  $('#d-img').src=b.image||'';$('#d-title').textContent=b.nameCn||b.name;$('#d-meta').textContent=[b.name!==b.nameCn?b.name:'',b.airDate,b.score?'★'+b.score:''].filter(Boolean).join('  ·  ');$('#d-summary').textContent=b.summary||'';
+  $('#d-sources').innerHTML='';$('#d-results').innerHTML='';$('#d-roads').innerHTML='';$('#d-eps').innerHTML='';$('#d-roads-title').style.display='none';
+  $('#d-src-status').textContent='（搜索中…）';
+  show('detail');
+  api('/api/sources?id='+b.id).then(function(r){
+    if(state.bangumi!==b)return;
+    state.sources=r.sources;$('#d-src-status').textContent='（关键字：'+r.keyword+'）';
+    var chips=[];var first=null;
+    r.sources.forEach(function(s){var c=el('div','chip'+(s.items.length?'':' dim'),s.plugin+(s.items.length?' ('+s.items.length+')':s.status==='empty'?' (无)':' (失败)'));c.setAttribute('data-nav','');c.tabIndex=0;c.onclick=function(){selectSource(s,c);};chips.push(c);if(!first&&s.items.length)first={s:s,c:c};});
+    $('#d-sources').innerHTML='';chips.forEach(function(c){$('#d-sources').appendChild(c);});
+    var h=state.history[b.id];var pref=null;
+    if(h){r.sources.forEach(function(s,i){if(s.plugin===h.plugin&&s.items.length)pref={s:s,c:chips[i]};});}
+    if(pref||first)selectSource((pref||first).s,(pref||first).c,h);else $('#d-src-status').textContent='（所有片源都没有结果）';
+  }).catch(function(e){$('#d-src-status').textContent='（片源搜索失败: '+e.message+'）';});
+}
+function selectSource(s,chip,h){
+  document.querySelectorAll('#d-sources .chip').forEach(function(c){c.classList.remove('on');});chip.classList.add('on');state.plugin=s.plugin;
+  $('#d-results').innerHTML='';$('#d-roads').innerHTML='';$('#d-eps').innerHTML='';
+  var pick=null;
+  s.items.forEach(function(it){var c=el('div','chip',it.name);c.setAttribute('data-nav','');c.tabIndex=0;c.onclick=function(){selectResult(it,c);};$('#d-results').appendChild(c);if(h&&h.plugin===s.plugin&&h.src===it.src)pick={it:it,c:c};});
+  if(!pick&&s.items.length)pick={it:s.items[0],c:$('#d-results').firstChild};
+  if(pick)selectResult(pick.it,pick.c,h);
+}
+function selectResult(it,chip,h){
+  document.querySelectorAll('#d-results .chip').forEach(function(c){c.classList.remove('on');});chip.classList.add('on');state.src=it.src;state.roads=null;
+  $('#d-roads').innerHTML='';fill($('#d-eps'),[],'正在获取播放列表…');
+  api('/api/roads?plugin='+encodeURIComponent(state.plugin)+'&src='+encodeURIComponent(it.src)).then(function(roads){
+    if(state.src!==it.src)return;state.roads=roads;$('#d-roads-title').style.display=roads.length>1?'':'none';$('#d-roads').innerHTML='';
+    roads.forEach(function(r,i){var c=el('div','chip',r.name||('线路'+(i+1)));c.setAttribute('data-nav','');c.tabIndex=0;c.onclick=function(){selectRoad(i,h);};$('#d-roads').appendChild(c);});
+    var ri=(h&&h.plugin===state.plugin&&h.src===state.src&&h.road<roads.length)?h.road:0;selectRoad(ri,h);
+  }).catch(function(e){fill($('#d-eps'),[],'获取播放列表失败: '+e.message);});
+}
+function selectRoad(i,h){
+  state.road=i;document.querySelectorAll('#d-roads .chip').forEach(function(c,j){c.classList.toggle('on',i===j);});
+  var eps=state.roads[i].episodes;var seen=(h&&h.plugin===state.plugin&&h.src===state.src&&h.road===i)?h.episode:0;
+  fill($('#d-eps'),eps.map(function(ep){var c=el('div','ep'+(ep.index===seen?' seen':''),ep.title);c.setAttribute('data-nav','');c.tabIndex=0;c.title=ep.title;c.onclick=function(){playEpisode(ep);};return c;}),'这条线路没有剧集');
+  if(isTV){var target=$('#d-eps .ep.seen')||$('#d-eps .ep');if(target)target.focus();}
+}
+function playEpisode(ep){
+  document.querySelectorAll('#d-eps .ep').forEach(function(c){c.classList.toggle('on',c.title===ep.title);});
+  toast('正在解析：'+ep.title+' …',15000);
+  if(isTV)goFullscreen();
+  api('/api/play',{id:state.bangumi.id,plugin:state.plugin,src:state.src,road:state.road,episode:ep.index}).then(function(r){toast((isTV?'开始播放：':'已发送到电视：')+r.title);refreshNow();}).catch(function(e){toast('失败：'+e.message,5000);});
+}
+
+/* ---------- player (TV side) ---------- */
+var v=$('#v'),ctl=$('#ctl'),gen=0,hls=null,ctlTimer=null,curTranscoded=false,retriedGen=0;
+function report(m,sec){var u='/api/report?e='+encodeURIComponent(m)+(sec!=null?'&s='+Math.floor(sec):'')+(v.duration>0&&isFinite(v.duration)?'&d='+Math.floor(v.duration):'')+'&r='+Math.random();try{fetch(u,{cache:'no-store'}).catch(function(){});}catch(e){}}
+function pmsg(m,sticky){$('#p-msg').textContent=m||'';showCtl(sticky);}
+function showCtl(sticky){ctl.classList.remove('hide');$('#player').classList.remove('nocursor');clearTimeout(ctlTimer);if(!sticky&&!v.paused)ctlTimer=setTimeout(function(){ctl.classList.add('hide');$('#player').classList.add('nocursor');},4000);}
+function updTime(){var d=v.duration>0&&isFinite(v.duration)?v.duration:0;$('#p-time').textContent=fmt(v.currentTime)+' / '+fmt(d);var pct=d?v.currentTime/d*100:0;$('#pbar-i').style.width=pct+'%';$('#pbar-b').style.left=pct+'%';$('#p-toggle').textContent=v.paused?'▶':'❚❚';}
+function goFullscreen(){var e=document.documentElement;var f=e.requestFullscreen||e.webkitRequestFullscreen||e.mozRequestFullScreen;if(f){try{var p=f.call(e);if(p&&p.catch)p.catch(function(){});}catch(x){}}}
+function exitFullscreen(){var f=document.exitFullscreen||document.webkitExitFullscreen;if(f&&(document.fullscreenElement||document.webkitFullscreenElement)){try{f.call(document);}catch(x){}}}
+function openPlayer(){$('#player').classList.add('show');document.body.classList.add('playing');if(v.src&&v.paused&&!v.ended){v.play().catch(function(){});}showCtl(false);}
+function closePlayer(){$('#player').classList.remove('show');document.body.classList.remove('playing');if(!v.paused)v.pause();exitFullscreen();refreshNow();}
+function toggle(){if(v.paused)v.play().catch(function(){});else v.pause();updTime();showCtl(false);}
+function onDecodeFailure(detail){if(curTranscoded||retriedGen===gen)return false;retriedGen=gen;pmsg('电视无法解码这条流，正在转码重试…',true);report('decode-failed '+detail);retranscode('player');return true;}
+function loadMedia(j){
+  if(hls){hls.destroy();hls=null;}
+  v.pause();v.removeAttribute('src');v.load();
+  if(!j.gen){closePlayer();return;}
+  curTranscoded=!!j.transcoded;
+  $('#p-title').textContent=(j.title||'')+(curTranscoded?'  [转码]':'');pmsg('加载中…',true);$('#spin').classList.add('show');
+  var seekDone=false;v.onloadedmetadata=function(){if(!seekDone&&j.start>0){seekDone=true;try{v.currentTime=j.start;}catch(e){}}updTime();};
+  if(j.kind==='hls'&&window.Hls&&Hls.isSupported()){hls=new Hls({enableWorker:false});hls.on(Hls.Events.ERROR,function(_,d){if(!d.fatal)return;if(/bufferAppendError|bufferAddCodecError|bufferIncompatibleCodecsError/.test(d.details)&&onDecodeFailure(d.details))return;pmsg('播放失败: '+d.details,true);report('error hls '+d.type+' '+d.details);});hls.loadSource(j.src);hls.attachMedia(v);}
+  else{v.src=j.src;}
+  var p=v.play();if(p&&p.catch)p.catch(function(e){pmsg('点击 ▶ 开始播放',true);report('play rejected '+e);});
+}
+function runCommand(c){
+  if(c.action==='pause')v.pause();else if(c.action==='play')v.play().catch(function(){});
+  else if(c.action==='toggle'){if(v.paused)v.play().catch(function(){});else v.pause();}
+  else if(c.action==='seek'){v.currentTime=Math.max(0,v.currentTime+Number(c.value||0));}
+  else if(c.action==='seekTo'){v.currentTime=Math.max(0,Number(c.value||0));}
+  updTime();showCtl(false);
+}
+function pollPlayer(){
+  if(!isTV)return;
+  var ackId=pollPlayer.ack;pollPlayer.ack=null;
+  fetch('/api/now'+(ackId?'?ack='+ackId:''),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){
+    if(j.cmd){runCommand(j.cmd);pollPlayer.ack=j.cmd.id;}
+    if(j.gen!==gen){gen=j.gen;if(j.gen){openPlayer();}loadMedia(j);}
+  }).catch(function(){}).then(function(){setTimeout(pollPlayer,2000);});
+}
+v.addEventListener('playing',function(){$('#spin').classList.remove('show');pmsg('',false);updTime();report('playing '+fmt(v.currentTime),v.currentTime);});
+v.addEventListener('pause',function(){if(!v.ended){pmsg('已暂停',true);updTime();report('paused '+fmt(v.currentTime),v.currentTime);}});
+v.addEventListener('waiting',function(){$('#spin').classList.add('show');});
+v.addEventListener('canplay',function(){$('#spin').classList.remove('show');});
+v.addEventListener('timeupdate',updTime);
+v.addEventListener('ended',function(){pmsg('播放结束，正在加载下一集…',true);report('ended',v.currentTime);api('/api/next',{}).then(function(r){if(!r.ok)pmsg(r.error||'没有下一集',true);}).catch(function(e){pmsg('下一集失败: '+e.message,true);});});
+v.addEventListener('error',function(){$('#spin').classList.remove('show');var e=v.error;var msg=e?(e.message||''):'';if((e&&(e.code===3||e.code===4))&&onDecodeFailure(msg))return;pmsg('播放失败'+(e?' ('+e.code+(msg?' '+msg:'')+')':''),true);report('error '+(e?e.code+' '+msg:''));});
+setInterval(function(){if(!v.paused&&!v.ended&&v.currentTime>0)report('playing '+fmt(v.currentTime),v.currentTime);},10000);
+/* on-screen controls: work with pointer/touch and with remote keys */
+v.addEventListener('click',function(){if(ctl.classList.contains('hide'))showCtl(false);else toggle();});
+document.addEventListener('mousemove',function(){if($('#player').classList.contains('show'))showCtl(false);});
+document.querySelectorAll('#ctl [data-pcmd]').forEach(function(b){b.onclick=function(e){e.stopPropagation();var c=b.dataset.pcmd;
+  if(c==='toggle')toggle();else if(c==='seek'){v.currentTime=Math.max(0,v.currentTime+Number(b.dataset.v));updTime();showCtl(false);}
+  else if(c==='next'){pmsg('正在解析下一集…',true);api('/api/next',{}).then(function(r){if(!r.ok)pmsg(r.error||'没有下一集',true);}).catch(function(x){pmsg('下一集失败: '+x.message,true);});}
+  else if(c==='fs'){if(document.fullscreenElement||document.webkitFullscreenElement)exitFullscreen();else goFullscreen();}
+};});
+$('#p-back').onclick=function(e){e.stopPropagation();closePlayer();};
+$('#pbar').addEventListener('click',function(e){var r=this.getBoundingClientRect();var d=v.duration>0&&isFinite(v.duration)?v.duration:0;if(d){v.currentTime=(e.clientX-r.left)/r.width*d;updTime();showCtl(false);}});
+
+/* ---------- keys: player + spatial navigation ---------- */
+function navigate(dir){
+  var scope=$('#player').classList.contains('show')?'#ctl [data-nav]':'.view.active [data-nav], header [data-nav]';
+  var nodes=Array.prototype.filter.call(document.querySelectorAll(scope),function(n){var r=n.getBoundingClientRect();return r.width>0&&r.height>0;});
+  var cur=document.activeElement;if(!cur||nodes.indexOf(cur)<0){if(nodes[0])nodes[0].focus();return;}
+  var cr=cur.getBoundingClientRect(),cx=(cr.left+cr.right)/2,cy=(cr.top+cr.bottom)/2,best=null,bd=Infinity;
+  nodes.forEach(function(n){if(n===cur)return;var r=n.getBoundingClientRect(),x=(r.left+r.right)/2,y=(r.top+r.bottom)/2,dx=x-cx,dy=y-cy;
+    var ok=dir==='left'?dx<-5&&Math.abs(dy)<Math.max(cr.height,r.height)*1.2:dir==='right'?dx>5&&Math.abs(dy)<Math.max(cr.height,r.height)*1.2:dir==='up'?dy<-5:dy>5;
+    if(!ok)return;var d=(dir==='left'||dir==='right')?Math.abs(dx)+Math.abs(dy)*3:Math.abs(dy)+Math.abs(dx)*0.6;if(d<bd){bd=d;best=n;}});
+  if(best){best.focus();best.scrollIntoView({block:'center',inline:'center',behavior:'smooth'});}
+}
+document.addEventListener('keydown',function(e){
+  var k=e.keyCode;var inPlayer=$('#player').classList.contains('show');
+  if(k===10009||k===27||(k===8&&document.activeElement.tagName!=='INPUT')){e.preventDefault();back();return;}
+  if(inPlayer){
+    var ctlVisible=!ctl.classList.contains('hide');
+    if(k===415){v.play().catch(function(){});}else if(k===19){v.pause();}else if(k===10252){toggle();}
+    else if(k===412){v.currentTime=Math.max(0,v.currentTime-10);updTime();showCtl(false);}
+    else if(k===417){v.currentTime=v.currentTime+10;updTime();showCtl(false);}
+    else if(k===413){v.pause();}
+    else if(!ctlVisible){showCtl(false);if(k===13||k===32)toggle();else if(k===37){v.currentTime=Math.max(0,v.currentTime-10);updTime();}else if(k===39){v.currentTime=v.currentTime+10;updTime();}}
+    else if(k===13||k===32){if(document.activeElement&&document.activeElement.hasAttribute('data-pcmd')||document.activeElement===$('#p-back'))document.activeElement.click();else toggle();showCtl(false);}
+    else if(k===37)navigate('left');else if(k===39)navigate('right');else if(k===38||k===40){showCtl(false);}
+    else return;
+    e.preventDefault();return;
+  }
+  if(!isTV)return;
+  if(document.activeElement.tagName==='INPUT'&&(k===37||k===39))return;
+  if(k===37)navigate('left');else if(k===39)navigate('right');else if(k===38)navigate('up');else if(k===40)navigate('down');
+  else if(k===13){if(document.activeElement&&document.activeElement.tagName!=='INPUT'){document.activeElement.click();}else return;}
+  else return;
+  e.preventDefault();
+});
+
+loadHome();refreshNow();pollPlayer();
+})();
+</script>
+</body>
+</html>
