@@ -1,0 +1,15 @@
+#pragma once
+#include <string>
+inline const std::string &eh_ca_bundle() {
+  // MSVC caps a single string literal at ~16KB (C2026), so the PEM is
+  // emitted as chunks and concatenated at runtime.
+  static const std::string roots = [] {
+    static const char *const parts[] = {
+@EH_CA_PARTS@
+    };
+    std::string s;
+    for (const char *part : parts) s += part;
+    return s;
+  }();
+  return roots;
+}
